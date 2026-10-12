@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7fb">
+  <title>Alpaca Workbench</title>
+  <link rel="stylesheet" href="/styles.css?v=20261013-benchmark-solid">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#backtest" aria-label="Alpaca Workbench 首页">
+        <span class="brand-mark">A</span>
+        <span><strong>Alpaca</strong><small>WORKBENCH</small></span>
+      </a>
+      <div class="side-label">工作台</div>
+      <nav class="main-nav" aria-label="主导航">
+        <button class="nav-item active" data-page="backtest"><span class="nav-icon">⌁</span>回测比较</button>
+        <button class="nav-item" data-page="strategies"><span class="nav-icon">◈</span>策略库</button>
+        <button class="nav-item" data-page="paper"><span class="nav-icon">▤</span>模拟交易</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="local-note"><span class="secure-dot"></span><div><strong>本机运行</strong><small>密钥仅保存在本机</small></div></div>
+        <div class="sidebar-version">ALPACA TRADING WORKBENCH <span>v0.1</span></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>个人工作区</span><span class="crumb-slash">/</span><strong id="current-section">回测比较</strong></div>
+        <div class="topbar-right">
+          <span class="status-pill" id="connection-status"><i></i><span>检查本机连接…</span></span>
+          <button class="avatar" title="本机工作区">JD</button>
+        </div>
+      </header>
+
+      <section class="page active" id="page-backtest">
+        <div class="page-heading">
+          <div><div class="eyebrow">STRATEGY LAB</div><h1>回测比较</h1><p>在相同的行情区间里比较多个策略与股票持有基准的资金变化。</p></div>
+          <button class="button button-quiet" id="refresh-runs">↻ <span>刷新记录</span></button>
+        </div>
+        <div class="workspace-grid">
+          <section class="card config-card">
+            <div class="card-heading"><div><span class="step-number">01</span><h2>回测设置</h2></div><span class="required-note">所有字段均在本机保存</span></div>
+            <form id="backtest-form">
+              <div class="field-grid two-col">
+                <label class="field"><span>股票代码</span><div class="input-with-prefix"><span>$</span><input name="symbol" value="AAPL" maxlength="10" required autocomplete="off"></div></label>
+                <label class="field"><span>K 线周期</span><select name="timeframe"><option value="1Day">日线</option><option value="1Hour">1 小时</option><option value="15Min">15 分钟</option></select></label>
+              </div>
+              <div class="field-grid two-col date-grid">
+                <label class="field"><span>开始日期</span><input name="start" type="date" required></label>
+                <label class="field"><span>结束日期</span><input name="end" type="date" required></label>
+              </div>
+              <div class="field"><span>初始资金</span><div class="input-with-prefix"><span>$</span><input name="capital" type="number" min="100" step="100" value="100000" required></div></div>
+              <div class="field-grid two-col compact-grid">
+                <label class="field"><span>手续费 <small>基点</small></span><input name="fee_bps" type="number" min="0" step="1" value="0"></label>
+                <label class="field"><span>滑点 <small>基点</small></span><input name="slippage_bps" type="number" min="0" step="1" value="5"></label>
+              </div>
+              <div class="strategy-select-heading"><span>选择策略</span><span id="strategy-count">0 / 8</span></div>
+              <div class="strategy-picker" id="strategy-picker"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+              <button class="button button-primary run-button" id="run-backtest" type="submit"><span class="play-icon">▶</span>运行回测</button>
+              <p class="form-footnote">行情来自 Yahoo Finance（yfinance）；15 分钟数据限最近 60 天，1 小时数据限最近 730 天。每次结果都会保存策略版本、区间和成本假设。</p>
+            </form>
+          </section>
+
+          <div class="results-column">
+            <section class="card results-card">
+              <div class="results-topline"><div><div class="eyebrow">BACKTEST</div><h2>回测结果</h2></div><div class="range-chip" id="active-range">尚未运行</div></div>
+              <div class="empty-results" id="empty-results"><div class="empty-chart-icon"><span></span><span></span><span></span><span></span><span></span></div><h3>运行一次回测，开始比较</h3><p>选择股票、日期区间和策略。回测行情固定来自 Yahoo Finance（yfinance），不使用合成演示数据。</p></div>
+              <div class="run-results hidden" id="run-results">
+                <div class="chart-section"><div class="chart-title-row"><div><h3>资金曲线</h3><p>策略资产价值与股票持有基准 · USD</p></div><div id="equity-legend" class="legend"></div></div><div class="canvas-wrap"><canvas id="equity-chart" aria-label="多个策略与股票持有基准的资金曲线"></canvas></div></div>
+                <p class="method-note" id="benchmark-note"></p>
+                <div class="results-topline performance-heading"><div><div class="eyebrow">PERFORMANCE</div><h2>策略表现</h2></div></div>
+                <div class="result-meta" id="result-meta"></div>
+                <div class="metrics-grid" id="metrics-grid"></div>
+                <div class="table-wrap"><table><thead><tr><th>策略 / 版本</th><th>总收益</th><th>年化收益</th><th>最大回撤</th><th>Sharpe</th><th>平仓次数</th><th>胜率</th></tr></thead><tbody id="metrics-table"></tbody></table></div>
+                <p class="method-note">策略信号在 K 线收盘后计算，并在下一根 K 线开盘执行；只做多，每次最多持有一个仓位。年化指标按所选周期估算。</p>
+              </div>
+            </section>
+            <section class="card history-card">
+              <div class="history-heading"><div><span class="step-number">02</span><h2>最近回测</h2></div><span class="muted-label">本机记录 · 最近 30 次</span></div>
+              <div class="run-history" id="run-history"><div class="history-empty">完成回测后，记录会显示在这里。</div></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-strategies">
+        <div class="page-heading"><div><div class="eyebrow">YOUR PLAYBOOK</div><h1>策略库</h1><p>编辑进出场规则。保存会创建新版本，旧回测继续保留原策略版本。</p></div><button class="button button-primary" id="new-strategy">＋ 新建策略</button></div>
+        <div class="strategy-layout"><div class="strategy-list" id="strategy-list"></div>
+          <section class="card strategy-editor" id="strategy-editor">
+            <div class="editor-empty" id="editor-empty"><div class="editor-icon">⌘</div><h2>编辑一个策略</h2><p>选择策略卡片开始编辑，或者新建自己的策略。</p><button class="button button-secondary" id="editor-create">新建策略</button></div>
+            <form id="strategy-form" class="hidden">
+              <div class="editor-header"><div><div class="eyebrow" id="editor-eyebrow">STRATEGY EDITOR</div><h2 id="editor-title">新建策略</h2></div><span class="version-tag" id="editor-version">新版本</span></div>
+              <input type="hidden" name="id">
+              <label class="field"><span>策略名称</span><input name="name" maxlength="80" required placeholder="例如：均线趋势策略"></label>
+              <label class="field"><span>说明</span><input name="description" maxlength="500" placeholder="简单描述这个策略的想法"></label>
+              <label class="field rule-field"><span>进场规则 <em>满足后，在下一根 K 线开盘买入</em></span><textarea name="entry_rule" spellcheck="false" required placeholder="cross_above(close, sma_20)"></textarea></label>
+              <label class="field rule-field"><span>出场规则 <em>满足后，在下一根 K 线开盘卖出</em></span><textarea name="exit_rule" spellcheck="false" required placeholder="cross_below(close, sma_20)"></textarea></label>
+              <div class="rule-help"><strong>可用表达式</strong><code>close &gt; sma_20 and rsi_14 &lt; 70</code><code>cross_above(ema_12, ema_26)</code><small>价格变量：open、high、low、close、volume。指标：sma_N、ema_N、rsi_N（N 为 2–500）。支持 &gt;、&lt;、==、and、or、not 和基础四则运算。</small></div>
+              <div class="editor-actions"><button class="button button-secondary" type="button" id="cancel-edit">取消</button><button class="button button-primary" type="submit">保存新版本</button></div>
+            </form>
+          </section>
+        </div>
+      </section>
+
+      <section class="page" id="page-paper">
+        <div class="page-heading"><div><div class="eyebrow">PAPER ENVIRONMENT</div><h1>模拟交易</h1><p>查看 Alpaca 模拟账户，并在确认后提交模拟市场订单。</p></div><div class="paper-only-badge"><span>●</span>仅模拟账户</div></div>
+        <div class="paper-grid">
+          <section class="card runner-card"><div class="card-heading"><div><span class="step-number">AUTO</span><h2>自动策略运行器</h2></div><span class="muted-label">仅 paper · 需要显式启用</span></div>
+            <form id="runner-form" class="runner-config">
+              <label class="field"><span>股票代码</span><input name="symbol" value="AAPL" maxlength="10" required></label>
+              <label class="field"><span>策略版本</span><select name="strategy_id" id="runner-strategy" required><option value="">读取策略…</option></select></label>
+              <label class="field"><span>周期</span><select name="timeframe"><option value="1Day">日线</option><option value="1Hour">1 小时</option><option value="15Min">15 分钟</option></select></label>
+              <label class="field"><span>每笔股数</span><input name="qty" type="number" min="0.000001" max="100000" step="0.000001" value="1" required></label>
+              <button class="button button-primary runner-start" id="start-runner" type="submit">▶ 启动策略</button>
+            </form>
+            <div class="runner-explainer">每分钟检查一次已完成的 Yahoo Finance K 线；启动时先记录当前最新 K 线，之后只对新 K 线评估。规则触发后才向 Alpaca paper API 提交市价单。运行器使用启动时保存的策略版本。</div>
+            <div class="runner-list" id="paper-runners"><div class="history-empty">尚无模拟策略运行记录。</div></div>
+          </section>
+          <section class="card paper-account-card"><div class="card-heading"><div><span class="step-number">01</span><h2>账户连接</h2></div><div class="account-header-actions"><button class="button button-secondary" id="test-paper-connection" type="button">测试密钥连接</button><button class="button button-quiet" id="refresh-paper" type="button">↻ 刷新账户</button></div></div><div id="paper-connection-result" class="connection-test-result" role="status" aria-live="polite"></div><div id="paper-account"><div class="paper-placeholder"><div class="loader"></div><p>读取本机连接状态…</p></div></div></section>
+          <section class="card order-card"><div class="card-heading"><div><span class="step-number">02</span><h2>提交模拟订单</h2></div></div><form id="order-form"><label class="field"><span>股票代码</span><input name="symbol" value="AAPL" maxlength="10" required></label><label class="field"><span>股数</span><input name="qty" type="number" min="0.000001" max="100000" step="0.000001" value="1" required></label><div class="side-select"><label><input type="radio" name="side" value="buy" checked><span>买入</span></label><label><input type="radio" name="side" value="sell"><span>卖出</span></label></div><button class="button button-primary run-button" id="submit-order" type="submit">提交模拟订单</button><p class="form-footnote">提交前会再次确认。订单只会发送至 Alpaca paper API。</p></form></section>
+          <section class="card orders-card"><div class="history-heading"><div><span class="step-number">03</span><h2>最近订单</h2></div><span class="muted-label">模拟账户 · 最近 30 笔</span></div><div id="paper-orders"><div class="history-empty">连接模拟账户后显示订单。</div></div></section>
+        </div>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <footer class="footer-note"><span>本地个人工作台</span><span>历史回测和模拟账户均不保证未来结果</span></footer>
+    </main>
+  </div>
+  <script src="/app.js?v=20261013-benchmark-solid" defer></script>
+</body>
+</html>
